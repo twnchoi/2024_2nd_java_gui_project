@@ -31,4 +31,8 @@ public class FileOps {
         value *= Long.signum(bytes);
         return String.format("%.1f %ciB", value / 1024.0, ci.current());
     }
+
+    public static double getRatio(long cur, long total) {
+        return (double) cur / total;
+    }
 }

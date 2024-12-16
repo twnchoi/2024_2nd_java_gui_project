@@ -1,14 +1,17 @@
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
-import javax.swing.text.TableView.TableRow;
 
 import myPkg.*;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.jar.JarEntry;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -16,11 +19,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.text.SimpleDateFormat;
-import java.util.Vector;
 
 public class ExplorerApp {
     
@@ -181,7 +179,7 @@ class ExpPanel extends JPanel {
         JLabel searchLabel = new JLabel("Search : ");
         searchLabel.setHorizontalAlignment(JLabel.RIGHT);
         JTextField jtxt = new JTextField(15);
-        
+
         jtxt.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -207,25 +205,108 @@ class ExpPanel extends JPanel {
         topPanel.add(searchLabel, BorderLayout.CENTER);
         topPanel.add(jtxt, BorderLayout.EAST);
 
-
         add(topPanel, BorderLayout.NORTH);
 
     }
 
-    private void searchRow(JTable jtbl, String searchText) {
-
-
-    }
 }
 
 class DiagPanel extends JPanel {
-    private File rootDir;
+    private HashMap<String, Long> diagMap;
 
     public DiagPanel(FileTable ftb) {
+        diagMap = ftb.getDiagMap();
+        List<String> keySet = new ArrayList<>(diagMap.keySet());
+        keySet.sort(new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                return diagMap.get(o2).compareTo(diagMap.get(o1));
+            }
+        });
+        
 
+
+        JPanel graphPanel = new JPanel() {
+            @Override
+            public void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                int chartWidth = getWidth() - 100;
+                int x = 50;
+                int y = 50;
+                int barHeight = 50;
+        
+                int currentX = x;
+                long rootSize = ftb.getRootSize();
+
+                g.drawString("Graph View", x, y - 30);
+                for (int i = 0; i < keySet.size(); i++) {
+                    String fileName = keySet.get(i);
+                    long fileSize = diagMap.get(keySet.get(i));
+                  
+
+                    // Calculate the width of the segment proportionally
+                    int segmentWidth = (int) ((fileSize / (double) ftb.getRootSize()) * chartWidth);
+        
+                    // Set color for each segment
+                    g.setColor(getRandomColor(i));
+                    g.fillRect(currentX, y, segmentWidth, barHeight);
+        
+                    // Draw the file name and percentage above the segment
+                    String percentage = String.format("%s (%.2f%%)", fileName, FileOps.getRatio(fileSize, rootSize) * 100);
+                    FontMetrics fm = g.getFontMetrics();
+                    int textWidth = fm.stringWidth(percentage);
+                    if(segmentWidth > textWidth) {
+                        g.setColor(Color.BLACK);
+                        g.drawString(percentage, currentX + segmentWidth / 2 - percentage.length() * 3, y - 10);
+                    }
+
+                    if(y + 100 + i * 20 < getHeight()) {
+                        g.setColor(Color.BLACK);
+                        g.drawString(fileName + " : " + FileOps.humanReadableByteCountBin(fileSize), x, y + 100 + i * 20);
+                    }
+
+                    currentX += segmentWidth; // Move to the next segment
+                }
+
+                
+            }
+        };
+
+
+        String[] columns = {"Type", "Total Size", "Graph"};
+        DefaultTableModel diagMdl = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int i,int c) {
+                return false;
+            }
+        };
+
+        for(String key : keySet) {
+            long size = diagMap.get(key);
+            diagMdl.addRow(new Object[]{key, FileOps.humanReadableByteCountBin(size), size});
+        }
+        
+        JTable diagTable = new JTable(diagMdl);
+        diagTable.getColumn("Type").setPreferredWidth(150);
+        diagTable.getColumn("Total Size").setPreferredWidth(200);
+        diagTable.getColumn("Graph").setPreferredWidth(450);
+        diagTable.setDefaultRenderer(Object.class, new CustomRenderer(ftb));
+        JScrollPane scrollPane = new JScrollPane(diagTable);
+
+        setLayout(new BorderLayout(20, 20));
+        graphPanel.setPreferredSize(new Dimension(getWidth(), 80));
+        add(graphPanel, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
+    }
+
+    private Color getRandomColor(int i) {
+        int r = ((i+1) * 22)% 255;
+        int g = ((i+1) * 73)% 255;
+        int b = ((i+1) * 64)% 255;
+        Color clr = new Color(r,g,b);
+        return clr;
     }
 }
-
 
 
 

@@ -30,7 +30,7 @@ public class CustomRenderer extends DefaultTableCellRenderer{
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
         
         String columnName = table.getColumnName(column);
-        if("Size".equals(columnName)) {
+        if("Size".equals(columnName) || "Graph".equals(columnName)) {
             long val = (long)value;
             return new BarPanel(ftb.getRootSize(), val);
         }

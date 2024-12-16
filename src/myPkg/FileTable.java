@@ -6,6 +6,7 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.HashMap;
 import java.util.Vector;
 import java.text.*;
 import javax.swing.JTable;
@@ -20,6 +21,7 @@ public class FileTable {
     private Vector<File> fileArray;
     private long rootSize;
     private File rootFile;
+    private HashMap<String, Long> diagMap;
 
     public FileTable(File root) {
         String[] columns = {"Name", "Type", "Directory", "Size", "Last Modified"};
@@ -39,6 +41,7 @@ public class FileTable {
         };
         this.rootFile = root;
         this.fileArray = new Vector<>();
+        this.diagMap = new HashMap<>();
         runVisitor(root);
     }
 
@@ -57,6 +60,9 @@ public class FileTable {
     public File getRootFile() {
         return rootFile;
     }
+    public HashMap<String, Long> getDiagMap() {
+        return diagMap;
+    }
     private void runVisitor(File root) {
 
         try{
@@ -71,6 +77,7 @@ public class FileTable {
     
                     String name = ptf.getName();
                     String type = FileOps.getFileExtension(ptf);
+                    if(type.equals("")) type = "NULL";
                     String dir = "ERROR";
                     try {
                         dir = ptf.getCanonicalPath().replace("\\" + name, "");
@@ -83,6 +90,13 @@ public class FileTable {
                     fileArray.add(ptf);
 
                     rootSize += size;
+                    if(diagMap.containsKey(type)) {
+                        long old = diagMap.get(type);
+                        diagMap.replace(type, old+size);
+                    }
+                    else {
+                        diagMap.put(type, size);
+                    }
                     return FileVisitResult.CONTINUE;
                 }
                 @Override
