@@ -1,3 +1,4 @@
+package myApp;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -5,13 +6,12 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
-import myPkg.*;
+import myLib.*;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.jar.JarEntry;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -46,6 +46,7 @@ class RootFrame extends JFrame {
         JButton setDirButton = new JButton("Select Directory");
         JButton refreshButton = new JButton("Refresh");
         pathField = new JTextField();
+        pathField.setEditable(false);
         toolBar.add(setDirButton);
         toolBar.add(refreshButton);
         toolBar.add(pathField);
@@ -123,9 +124,15 @@ class InitPanel extends JPanel {
     public InitPanel() {
         setLayout(new FlowLayout(FlowLayout.LEFT));
         String html = "<html>" +
-        "<span style='font-family:times new roman;font-size:30px; font-weight:bold;'>Hi</span><br>" +
-        "<span style='font-size:15px;'>Thanks for using DirDiag.</span><br>" +
-        "<span style='font-size:15px;'>Please set directory at toolbar.</span>" +
+        "<span style='font-family:times new roman;font-size:30px; font-weight:bold;'>DirDiag</span><br><br>" +
+        "<span style='font-size:18px;'>Overview</span><br><br>" +
+        "<span style='font-size:12px;'>Diganose and visualize directory composition.</span><br><br><br>" +
+        "<span style='font-size:18px;'>How to use</span><br><br>" +
+        "<span style='font-size:12px;'>Select a directory at the toolbar.</span><br>" +
+        "<span style='font-size:12px;'>Explorer tab shows file sizes.</span><br>" +
+        "<span style='font-size:12px;'> &nbsp;&nbsp;- Click at the row to reveal in file explorer.</span><br>" +
+        "<span style='font-size:12px;'> &nbsp;&nbsp;- Click at the column name to sort.</span><br>" +
+        "<span style='font-size:12px;'>Diagnose tab shows filetype sizes.</span><br>" +
         "</html>";
         add(new JLabel(html));
     }
@@ -147,7 +154,7 @@ class ExpPanel extends JPanel {
         jtbl.getColumn("Size").setPreferredWidth(180);
         jtbl.getColumn("Last Modified").setPreferredWidth(90);
         jtbl.setBorder(BorderFactory.createEmptyBorder());
-        TableRowSorter sorter = new TableRowSorter<>(mdl);
+        TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(mdl);
         jtbl.setRowSorter(sorter);
 
         jtbl.addMouseListener(new MouseAdapter() {
@@ -155,6 +162,7 @@ class ExpPanel extends JPanel {
             public void mouseClicked(MouseEvent e) {
                 if(e.getClickCount() == 2) {
                     int selRow = jtbl.getSelectedRow();
+                    selRow = jtbl.convertRowIndexToModel(selRow);
                     if(selRow != -1) {
                         String path = (String) mdl.getValueAt(selRow, 2);
                         try {Desktop.getDesktop().open(new File(path));
@@ -195,7 +203,7 @@ class ExpPanel extends JPanel {
             }
             protected void updateFilter() {
                 try {
-                    sorter.setRowFilter(RowFilter.regexFilter(jtxt.getText()));
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + jtxt.getText()));
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -242,16 +250,13 @@ class DiagPanel extends JPanel {
                 for (int i = 0; i < keySet.size(); i++) {
                     String fileName = keySet.get(i);
                     long fileSize = diagMap.get(keySet.get(i));
-                  
-
-                    // Calculate the width of the segment proportionally
+                    
+                    //
                     int segmentWidth = (int) ((fileSize / (double) ftb.getRootSize()) * chartWidth);
         
-                    // Set color for each segment
                     g.setColor(getRandomColor(i));
                     g.fillRect(currentX, y, segmentWidth, barHeight);
         
-                    // Draw the file name and percentage above the segment
                     String percentage = String.format("%s (%.2f%%)", fileName, FileOps.getRatio(fileSize, rootSize) * 100);
                     FontMetrics fm = g.getFontMetrics();
                     int textWidth = fm.stringWidth(percentage);
@@ -265,7 +270,7 @@ class DiagPanel extends JPanel {
                         g.drawString(fileName + " : " + FileOps.humanReadableByteCountBin(fileSize), x, y + 100 + i * 20);
                     }
 
-                    currentX += segmentWidth; // Move to the next segment
+                    currentX += segmentWidth;
                 }
 
                 
@@ -307,66 +312,3 @@ class DiagPanel extends JPanel {
         return clr;
     }
 }
-
-
-
-/*
-class FileElement {
-    private String name;
-    private String type;
-    private long size;
-    private long lastMod;
-    private File file;
-    private Vector<FileElement> subFileVectors = null;
-
-    public FileElement(File f) {
-        this.name = f.getName();
-        this.type = FileOps.getFileExtension(f);
-        this.lastMod = f.lastModified();
-        this.file = f;
-    }
-
-    public void addSubFile(File f) {
-        if(this.subFileVectors == null) {
-            this.subFileVectors = new Vector<>();
-        }
-        FileElement subFE = new FileElement(f);
-        this.subFileVectors.add(subFE);
-    }
-    public Vector<FileElement> getSubFiles() {
-        return this.subFileVectors;
-    }
-}
-
-class constructFileVector implements FileVisitor<File> {
-
-    private Vector<FileElement> rootVector = new Vector<>();
-    private FileElement currentElem;
-
-    public Vector<FileElement> getFileVector() {
-        return rootVector;
-    }
-
-    @Override
-    public FileVisitResult preVisitDirectory(File dir, BasicFileAttributes attrs) throws IOException {
-        currentElem = new FileElement(dir);
-        rootVector.add(currentElem);
-        return FileVisitResult.CONTINUE;   
-    }
-    @Override
-    public FileVisitResult visitFile(File f, BasicFileAttributes attrs) throws IOException {
-        currentElem.addSubFile(f);
-        return FileVisitResult.CONTINUE;
-    }
-    @Override
-    public FileVisitResult visitFileFailed(File f, IOException exc) throws IOException {
-        System.out.println("visitFailed: " + f.toPath());
-        return FileVisitResult.CONTINUE;
-    }
-    @Override
-    public FileVisitResult postVisitDirectory(File dir, IOException exc) throws IOException {
-        currentElem = currentElem.get
-    }
-}
-
-*/

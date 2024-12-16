@@ -1,4 +1,4 @@
-package myPkg;
+package myLib;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,8 +8,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Vector;
-import java.text.*;
-import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 
@@ -32,11 +30,11 @@ public class FileTable {
             }
 
             @Override
-            public Class<?> getColumnClass(int columnIndex) {
+            public Class getColumnClass(int columnIndex) {
                 if(columnIndex == 3 || columnIndex == 4) {
                     return Long.class;
                 }
-                return super.getColumnClass(columnIndex);
+                return Object.class;
             }
         };
         this.rootFile = root;
@@ -101,15 +99,13 @@ public class FileTable {
                 }
                 @Override
                 public FileVisitResult visitFileFailed(Path f, IOException exc) {
-                    System.out.println("skipped: " + f + " (" + exc + ")");
-                    // Skip folders that can't be traversed
+                    System.out.println("skip: " + f + " (" + exc + ")");
                     return FileVisitResult.CONTINUE;
                 }
                 @Override
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
                     if (exc != null)
-                        System.out.println("had trouble traversing: " + dir + " (" + exc + ")");
-                    // Ignore errors traversing a folder
+                        System.out.println("error: " + dir + " (" + exc + ")");
                     return FileVisitResult.CONTINUE;
                 }
             });

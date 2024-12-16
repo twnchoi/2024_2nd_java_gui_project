@@ -1,4 +1,4 @@
-package myPkg;
+package myLib;
 
 import java.text.*;
 import java.io.File;

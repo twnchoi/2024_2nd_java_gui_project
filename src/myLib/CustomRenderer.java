@@ -1,17 +1,13 @@
-package myPkg;
-
+package myLib;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
-import myPkg.FileOps;
 
 public class CustomRenderer extends DefaultTableCellRenderer{
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
